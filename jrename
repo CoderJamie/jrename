@@ -1,0 +1,171 @@
+#!/usr/bin/python
+
+import os
+import optparse
+import re
+import shutil
+
+app_name    = "jRename"
+app_version = "1.1.3"
+app_author  = "Jamie Wilson"
+
+def is_numeric(filename):
+    filename = get_file_basename(filename)
+    if filename.isdigit():
+        return True
+    else:
+        return False
+
+def split_file(filename):
+  path = os.path.dirname(filename)
+  if path:
+    path = path + "/"
+
+  basename = os.path.basename(filename)
+  filename, ext = os.path.splitext(basename)
+
+  # Rename .jpeg and .jpe extensions to .jpg for consistency
+  ext = ext.lower()
+  if ext == ".jpeg" or ext == ".jpe":
+      ext = ".jpg"
+
+  return filename, ext
+
+def get_file_basename(filename):
+  # basename is everything to the left of _0000.ext or -0000.ext
+
+  filename, ext = split_file(filename)
+
+  # delimeters: - _ and . (s_0001.jpg, s-0001.jpg, s.0001.jpg)
+  loc = re.search("[-_\.]+[0-9]+$", filename)
+  if loc:
+    loc = loc.group(0)
+    loc = filename.rfind(loc)
+    filename = filename[:loc]
+
+  return filename
+
+def create_file_lists(files):
+  # **** SORTING ****
+  # Build file lists for processing (basically, separate numeric-only files from the rest so they can be sorted)
+  numeric_files = [] # these will be files that are only numbers
+  regular_files = [] # these will be the non-numeric files
+
+  for filename in files:
+    # Get the filename and extension
+    basename, ext = split_file(filename)
+    basename = get_file_basename(basename) # needed to identify numeric-only files as well as in automated mode
+
+    # Sort these into numeric and non-numeric lists: (basename, filename, extension)
+    if basename.isdigit():
+        numeric_files.append((int(basename),filename,ext))
+    else:
+        regular_files.append((basename,filename,ext))
+
+  # sort numeric files
+  numeric_files.sort()
+
+  return numeric_files, regular_files
+
+
+def main():
+  parser = optparse.OptionParser("Usage: %prog [options] file1 file2", version="%s v%s" % (app_name, app_version))
+  parser.add_option("-a", "--automated", action="store_true", dest="automated", default=False, help="Automated filename parsing")
+  parser.add_option("-n", "--name", action="store", type="string", dest="new_name", help="Basename for files")
+  parser.add_option("-d", "--directory", action="store", type="string", dest="dest_dir", default=None, help="Destination directory")
+
+  # TODO: ? - padding length (number of zeroes to use for padding)
+  # TODO: ? - set the delimiter (default is _ but could be - or even . )
+  # TODO: Parse files like img1.jpg img2.jpg img10.jpg, etc. without ruining files like emily18_0001.jpg, emily18_0002.jpg, etc.
+
+  # split commandline into options (opts) and arguments (args) (arguments = files)
+  opts, files = parser.parse_args()
+
+  # Intro text
+  print "%s v%s by %s" % (app_name, app_version, app_author)
+
+  # if automated, make sure the new_name variable is empty
+  if opts.automated:
+    opts.new_name = None
+
+  # make sure the dest_dir has a trailing /
+  if opts.dest_dir and not opts.dest_dir[-1] == "/":
+      opts.dest_dir = opts.dest_dir + "/"
+
+  # if dest_dir is the current working directory, then unset it
+  if opts.dest_dir == os.getcwd() + "/":
+      print "dest_dir is current directory"
+      opts.dest_dir = None
+
+  # if dest_dir doesn't exist, create it
+  if opts.dest_dir and not os.path.exists(opts.dest_dir):
+    print "Destination directory (%s) does not exist." % opts.dest_dir
+    try:
+        os.makedirs(opts.dest_dir)
+        print "Created %s." % opts.dest_dir
+    except:
+        print "Unable to create %s. Cannot proceed without valid destination directory." % opts.dest_dir
+        exit()
+
+  # if not automated, make sure the new_name variable is defined
+  if not opts.automated and not opts.new_name:
+    print "No new filename was specified."
+    exit(code=1)
+
+  # Are there files to work with?
+  if not files:
+      print "No files specified."
+      exit(code=1)
+
+  # sort the files into lists of numeric and non-numeric files
+  numeric, regular = create_file_lists(files)
+
+  # **** RENAMING ****
+
+  # Determine if numeric or regular files should go first (based on which type comes first in the list of files)
+  if get_file_basename(files[0]).isdigit():
+      files = numeric + regular
+  else:
+      files = regular + numeric
+
+  for f in files:
+    # ignore non-files (directories, non-existant files, etc)
+    if not os.path.isfile(f[1]):
+        print "%s is not a file. Ignoring." % f[1]
+        continue
+
+    counter = 0
+    reset = False
+
+    while reset == False:
+        counter = counter + 1
+        if not opts.automated:
+            newname = "%s_%04d%s" % (opts.new_name, counter, f[2])
+        else:
+            if not is_numeric(f[1]):
+                newname = "%s_%04d%s" % (f[0], counter, f[2])
+            else:
+                newname = "%04d%s" % (counter, f[2])
+
+        # prepend dest_dir
+        if opts.dest_dir:
+            newname = opts.dest_dir + newname
+
+        # does file exist?
+        if os.path.exists(newname):
+            if newname == f[1]:
+                # these are the same file
+                print "%s == %s" % (f[1], newname)
+                reset = True
+            else:
+                continue
+        else:
+            print "%s -> %s" % (f[1], newname)
+            try:
+                shutil.move(f[1], newname) # shutil.move can cross filesystems, unlike os.rename
+            except:
+                print "Failure moving %s. Make sure the location is writeable." % f[1]
+            reset = True
+
+if __name__ == "__main__":
+  main()
