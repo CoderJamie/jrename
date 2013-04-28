@@ -14,5 +14,5 @@ __jrename__ _{options}_ _{files}_
 
 # Why another renaming script?
 
-This is a case of me scratching my own itch. I simply couldn't find a rename app or script to do what I wanted it to do. I didn't need the extra bells and whistles. I just wanted something to keep my archived files tidied up. This is the result. (Actually, it was originally a bash script, but that's another story for another time).
+This is a case of me scratching my own itch. I simply couldn't find a rename app or script to do what I wanted it to do. I didn't need the extra bells and whistles. I just wanted something to keep my archived files tidied up and I wanted to be able to run it quickly from the command line. This is the result. (Actually, it was originally a bash script, but that's another story for another time).
 
