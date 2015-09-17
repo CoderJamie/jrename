@@ -1,7 +1,7 @@
 jrename
 =======
 
-A simple command line script to quickly sort/rename a collection of files into a standard *filename_0000.ext* convention. Useful for files that belong to a series, such as photos.
+A simple Python command line script to quickly sort/rename a collection of files into a standard *filename_0000.ext* convention. Useful for files that belong to a series, such as photos.
 
 # Usage
 __jrename__ _{options}_ _{files}_
