@@ -10,6 +10,7 @@ __jrename__ _{options}_ _{files}_
 
 * _-a_ - Automated. Will attempt to preserve the original base filename and only change the file counter, if one exists. Useful for closing gaps. For example, file_0001.ext, file_0003.ext would become file_0001.ext and file_0002.ext.
 * _-n_ - New base filename
+* _--hash_ - Use SHA1 hash instead of numeric counter
 * _-d_ - Destination directory, if not the current one
 
 # Why another renaming script?
